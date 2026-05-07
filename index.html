@@ -914,7 +914,9 @@ function normalizeTeam(team) {
     const found = findTeam(team);
     return { name: team, logo: found ? found.logo : '' };
   }
-  return { name: team.name || '', logo: team.logo || '' };
+  const name = team.name || '';
+  const found = findTeam(name);
+  return { name, logo: team.logo || (found ? found.logo : '') };
 }
 
 function normalizeState() {
