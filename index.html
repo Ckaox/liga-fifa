@@ -652,6 +652,152 @@ const fallbackTeams = [
 let state = { players: [], matches: [] };
 try { const s = localStorage.getItem('fifaLeague3'); if (s) state = JSON.parse(s); } catch(e) {}
 function persist() { try { localStorage.setItem('fifaLeague3', JSON.stringify(state)); } catch(e) {} }
+const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+let cloudSyncTimer = null;
+
+function supabaseHeaders(extra) {
+  return {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    ...extra
+  };
+}
+
+async function supabaseRequest(path, options) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: supabaseHeaders(options && options.headers ? options.headers : {})
+  });
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(msg || `Supabase error ${res.status}`);
+  }
+  if (res.status === 204) return null;
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) return res.json();
+  return null;
+}
+
+function playerToRow(player) {
+  const t1 = normalizeTeam(player.teams[0]);
+  const t2 = normalizeTeam(player.teams[1]);
+  return {
+    id: Number(player.id),
+    name: player.name,
+    team1_name: t1.name,
+    team1_logo: t1.logo || '',
+    team2_name: t2.name,
+    team2_logo: t2.logo || ''
+  };
+}
+
+function rowToPlayer(row) {
+  return {
+    id: Number(row.id),
+    name: row.name || '',
+    teams: [
+      { name: row.team1_name || '', logo: row.team1_logo || '' },
+      { name: row.team2_name || '', logo: row.team2_logo || '' }
+    ]
+  };
+}
+
+function matchToRow(match) {
+  const homeTeam = normalizeTeam(match.home.team);
+  const awayTeam = normalizeTeam(match.away.team);
+  return {
+    id: Number(match.id),
+    date: match.date,
+    home_player_id: Number(match.home.playerId),
+    home_player_name: match.home.playerName,
+    home_team_name: homeTeam.name,
+    home_team_logo: homeTeam.logo || '',
+    home_score: Number(match.home.score),
+    away_player_id: Number(match.away.playerId),
+    away_player_name: match.away.playerName,
+    away_team_name: awayTeam.name,
+    away_team_logo: awayTeam.logo || '',
+    away_score: Number(match.away.score)
+  };
+}
+
+function rowToMatch(row) {
+  return {
+    id: Number(row.id),
+    date: row.date,
+    home: {
+      playerId: Number(row.home_player_id),
+      playerName: row.home_player_name,
+      team: { name: row.home_team_name || '', logo: row.home_team_logo || '' },
+      score: Number(row.home_score || 0)
+    },
+    away: {
+      playerId: Number(row.away_player_id),
+      playerName: row.away_player_name,
+      team: { name: row.away_team_name || '', logo: row.away_team_logo || '' },
+      score: Number(row.away_score || 0)
+    }
+  };
+}
+
+function scheduleCloudSync() {
+  if (!SUPABASE_ENABLED) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => {
+    syncStateToCloud().catch(() => {
+      toast('âš  No se pudo sincronizar con Supabase');
+    });
+  }, 450);
+}
+
+async function syncStateToCloud() {
+  if (!SUPABASE_ENABLED) return;
+  const playersRows = state.players.map(playerToRow);
+  const matchesRows = state.matches.map(matchToRow);
+
+  await supabaseRequest('players?id=not.is.null', {
+    method: 'DELETE',
+    headers: { Prefer: 'return=minimal' }
+  });
+  if (playersRows.length) {
+    await supabaseRequest('players', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(playersRows)
+    });
+  }
+
+  await supabaseRequest('matches?id=not.is.null', {
+    method: 'DELETE',
+    headers: { Prefer: 'return=minimal' }
+  });
+  if (matchesRows.length) {
+    await supabaseRequest('matches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(matchesRows)
+    });
+  }
+}
+
+async function loadStateFromCloud() {
+  if (!SUPABASE_ENABLED) return;
+  try {
+    const cloudPlayers = await supabaseRequest('players?select=*&order=id.asc', { method: 'GET' }) || [];
+    const cloudMatches = await supabaseRequest('matches?select=*&order=id.asc', { method: 'GET' }) || [];
+    if (cloudPlayers.length || cloudMatches.length) {
+      state.players = cloudPlayers.map(rowToPlayer);
+      state.matches = cloudMatches.map(rowToMatch);
+      persist();
+      return;
+    }
+    if (state.players.length || state.matches.length) {
+      await syncStateToCloud();
+    }
+  } catch (e) {
+    toast('âš  Supabase no disponible, usando guardado local');
+  }
+}
 
 function normalizeTeam(team) {
   if (!team) return { name: '', logo: '' };
@@ -881,6 +1027,7 @@ async function addPlayer() {
   if (state.players.find(p => p.name.toLowerCase() === name.toLowerCase())) { toast('âš  Ya existe ese jugador'); return; }
   state.players.push({ id: Date.now(), name, teams: [t1, t2] });
   persist();
+  scheduleCloudSync();
   ['playerName','team1','team2'].forEach(id => document.getElementById(id).value = '');
   renderPlayerList();
   toast('âœ“ ' + name + ' agregado');
@@ -892,11 +1039,12 @@ function removePlayer(id) {
   if (hasMatches) { toast('âš  No podÃ©s borrar: el jugador tiene partidos'); return; }
   state.players = state.players.filter(p => p.id !== id);
   persist();
+  scheduleCloudSync();
   renderPlayerList();
   toast('Jugador eliminado');
 }
 
-function editPlayer(id) {
+async function editPlayer(id) {
   const player = state.players.find(p => p.id === id);
   if (!player) return;
   const newName = prompt('Nombre del jugador', player.name);
@@ -915,8 +1063,11 @@ function editPlayer(id) {
   const nameUsed = state.players.find(p => p.id !== id && p.name.toLowerCase() === cleanName.toLowerCase());
   if (nameUsed) { toast('âš  Ya existe ese nombre de jugador'); return; }
 
+  const resolvedT1 = await resolveTeam(cleanT1);
+  const resolvedT2 = await resolveTeam(cleanT2);
+
   player.name = cleanName;
-  player.teams = [normalizeTeam(cleanT1), normalizeTeam(cleanT2)];
+  player.teams = [resolvedT1, resolvedT2];
 
   state.matches.forEach(m => {
     if (m.home.playerId === id) m.home.playerName = cleanName;
@@ -924,6 +1075,7 @@ function editPlayer(id) {
   });
 
   persist();
+  scheduleCloudSync();
   renderPlayerList();
   renderHistory();
   renderStandings();
@@ -1016,6 +1168,7 @@ async function saveMatch() {
     toast('âœ“ Partido guardado');
   }
   persist();
+  scheduleCloudSync();
   document.getElementById('scoreHome').value = 0;
   document.getElementById('scoreAway').value = 0;
   renderHistory();
@@ -1044,6 +1197,7 @@ function deleteMatch(id) {
   if (!confirm('Â¿Eliminar este partido?')) return;
   state.matches = state.matches.filter(m => m.id !== id);
   persist();
+  scheduleCloudSync();
   renderHistory();
   renderStandings();
   toast('Partido eliminado');
@@ -1129,13 +1283,18 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-loadTeamCatalog().then(() => {
+async function initApp() {
+  await loadTeamCatalog();
+  normalizeState();
+  await loadStateFromCloud();
   normalizeState();
   renderPlayerList();
   renderMatchForm();
   renderStandings();
   renderHistory();
-});
+}
+
+initApp();
 </script>
 </body>
 </html>
