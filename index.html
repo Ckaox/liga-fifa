@@ -650,6 +650,7 @@
 // CREDENCIALES - cambia estos dos valores
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'fifa2025';
+const SHOW_TEAM_CRESTS = false;
 // Supabase opcional para catalogo de equipos (tabla: fifa_teams con columnas name, logo_url)
 const SUPABASE_URL = 'https://czkmfjmzszwlqoeffuec.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6a21mam16c3p3bHFvZWZmdWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODY5NTQsImV4cCI6MjA5Mzc2Mjk1NH0.RDuUBouTbKreVUxKeOOG7HDQV4yucoMcAliaY0v7tvw';
@@ -1133,7 +1134,7 @@ async function resolveTeam(name) {
 function teamHtml(team) {
   if (!team || !team.name) return '-';
   const initials = keyify(team.name).slice(0, 3).toUpperCase() || 'CLB';
-  const logo = team.logo
+  const logo = (SHOW_TEAM_CRESTS && team.logo)
     ? `<img class="team-crest" src="${esc(team.logo)}" alt="" onerror="this.style.display='none'; if(this.nextElementSibling){ this.nextElementSibling.style.display='inline-flex'; }"><span class="team-fallback" style="display:none">${initials}</span>`
     : `<span class="team-fallback">${initials}</span>`;
   return `${logo}${esc(team.name)}`;
@@ -1157,7 +1158,7 @@ function miniTeamIconHtml(team) {
   const t = normalizeTeam(team);
   const name = t.name || 'Equipo';
   const code = teamCode(name);
-  if (t.logo) {
+  if (SHOW_TEAM_CRESTS && t.logo) {
     return `<span class="team-mini-icon" title="${esc(name)}"><img src="${esc(t.logo)}" alt="" onerror="this.style.display='none'; if(this.nextElementSibling){ this.nextElementSibling.style.display='inline-flex'; }"><span class="team-mini-badge" style="display:none" title="${esc(name)}">${code}</span></span>`;
   }
   return `<span class="team-mini-badge" title="${esc(name)}">${code}</span>`;
