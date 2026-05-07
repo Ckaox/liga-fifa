@@ -585,7 +585,6 @@
   <div class="login-box">
     <div class="login-title">Acceso Admin</div>
     <div class="login-sub">Solo para administradores de la liga</div>
-    <div class="login-sub" style="margin-top:-14px;margin-bottom:18px">Usuario: admin | Clave: fifa2025</div>
     <div class="login-field">
       <label>Usuario</label>
       <input type="text" id="loginUser" placeholder="usuario" autocomplete="username">
@@ -660,6 +659,30 @@ const teamApiHints = {
   gimnasiayesgrima: 'Gimnasia y Esgrima',
   argentinosjuniors: 'Argentinos Juniors'
 };
+const TEAM_CATALOG_CACHE_KEY = 'fifaTeamsCatalogV3';
+const TEAM_CATALOG_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const FIFA_LEAGUES = [
+  'English Premier League',
+  'EFL Championship',
+  'Spanish La Liga',
+  'Spanish Segunda Division',
+  'Italian Serie A',
+  'Italian Serie B',
+  'German Bundesliga',
+  'German 2. Bundesliga',
+  'French Ligue 1',
+  'Portuguese Primeira Liga',
+  'Holland Eredivisie',
+  'Belgian First Division A',
+  'Turkish Super Lig',
+  'Argentine Primera Division',
+  'Brasileiro Serie A',
+  'Mexican Primera League',
+  'USA Major League Soccer',
+  'Saudi Pro League',
+  'Scottish Premier League',
+  'Austrian Bundesliga'
+];
 const fallbackTeams = [
   { name: 'Real Madrid', logo: 'https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg' },
   { name: 'FC Barcelona', logo: 'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg' },
@@ -900,6 +923,81 @@ function renderTeamsDatalist() {
   list.innerHTML = teamCatalog.map(t => `<option value="${esc(t.name)}"></option>`).join('');
 }
 
+function mergeTeamLists() {
+  const byKey = {};
+  for (const list of arguments) {
+    const items = Array.isArray(list) ? list : [];
+    for (const t of items) {
+      if (!t || !t.name) continue;
+      const k = keyify(t.name);
+      if (!byKey[k]) {
+        byKey[k] = { name: t.name, logo: t.logo || '' };
+      } else if (!byKey[k].logo && t.logo) {
+        byKey[k].logo = t.logo;
+      }
+    }
+  }
+  return Object.values(byKey).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+}
+
+function getCachedCatalog() {
+  try {
+    const raw = localStorage.getItem(TEAM_CATALOG_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.teams) || !parsed.savedAt) return null;
+    if ((Date.now() - parsed.savedAt) > TEAM_CATALOG_CACHE_TTL_MS) return null;
+    return parsed.teams;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setCachedCatalog(teams) {
+  try {
+    localStorage.setItem(TEAM_CATALOG_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), teams }));
+  } catch (e) {}
+}
+
+async function fetchLeagueTeams(leagueName) {
+  try {
+    const url = `https://www.thesportsdb.com/api/v1/json/3/search_all_teams.php?l=${encodeURIComponent(leagueName)}`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const teams = Array.isArray(data.teams) ? data.teams : [];
+    return teams
+      .filter(t => t && t.strTeam)
+      .map(t => ({ name: t.strTeam, logo: t.strTeamBadge || t.strBadge || '' }));
+  } catch (e) {
+    return [];
+  }
+}
+
+async function loadFifaLeaguesCatalog() {
+  const settled = await Promise.allSettled(FIFA_LEAGUES.map(fetchLeagueTeams));
+  const all = [];
+  settled.forEach(r => {
+    if (r.status === 'fulfilled' && Array.isArray(r.value)) all.push(...r.value);
+  });
+  return mergeTeamLists(all);
+}
+
+async function tryUpsertCatalogToSupabase(teams) {
+  if (!SUPABASE_ENABLED || !teams.length) return;
+  try {
+    const rows = teams.map(t => ({ name: t.name, logo_url: t.logo || '' }));
+    await supabaseRequest('fifa_teams?on_conflict=name', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify(rows)
+    });
+  } catch (e) {}
+}
+
 function upsertTeamCatalog(team) {
   if (!team || !team.name) return;
   const existing = findTeam(team.name);
@@ -1004,7 +1102,7 @@ async function enrichTeamPreview(inputId, previewId) {
 }
 
 async function loadTeamCatalog() {
-  let loaded = false;
+  let supabaseTeams = [];
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     try {
       const url = `${SUPABASE_URL}/rest/v1/fifa_teams?select=name,logo_url&order=name.asc`;
@@ -1016,14 +1114,23 @@ async function loadTeamCatalog() {
       });
       if (res.ok) {
         const rows = await res.json();
-        teamCatalog = rows
+        supabaseTeams = rows
           .filter(r => r.name)
           .map(r => ({ name: r.name, logo: r.logo_url || '' }));
-        loaded = teamCatalog.length > 0;
       }
     } catch (e) {}
   }
-  if (!loaded) teamCatalog = fallbackTeams;
+
+  const cachedTeams = getCachedCatalog() || [];
+  teamCatalog = mergeTeamLists(fallbackTeams, supabaseTeams, cachedTeams);
+
+  if (teamCatalog.length < 150) {
+    const leagueTeams = await loadFifaLeaguesCatalog();
+    teamCatalog = mergeTeamLists(teamCatalog, leagueTeams);
+    setCachedCatalog(teamCatalog);
+    if (leagueTeams.length) tryUpsertCatalogToSupabase(leagueTeams);
+  }
+
   renderTeamsDatalist();
 }
 
