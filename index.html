@@ -349,6 +349,38 @@
   .standings-table td:nth-child(2) { font-weight: 600; color: var(--text); }
   .standings-table tr:last-child td { border-bottom: none; }
   .standings-table tr:hover td { background: var(--surface2); }
+  .standings-player {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .standings-team-icons {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .team-mini-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex: 0 0 auto;
+  }
+  .team-mini-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .team-mini-ball svg {
+    width: 10px;
+    height: 10px;
+    stroke: var(--gold);
+  }
   .pts-cell { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--gold) !important; }
   .rank-cell { color: var(--text3) !important; font-weight: 600; width: 32px; }
   .rank-1 { color: #FFD700 !important; }
@@ -1094,6 +1126,18 @@ function teamHtml(team) {
   return `${logo}${esc(team.name)}`;
 }
 
+function soccerBallSvg() {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3c3 3 3 9 0 12M12 3C9 6 9 12 12 15M3 12h18"/></svg>';
+}
+
+function miniTeamIconHtml(team) {
+  const t = normalizeTeam(team);
+  if (t.logo) {
+    return `<span class="team-mini-icon"><img src="${esc(t.logo)}" alt="" onerror="this.style.display='none'; if(this.nextElementSibling){ this.nextElementSibling.style.display='inline-flex'; }"><span class="team-mini-icon team-mini-ball" style="display:none">${soccerBallSvg()}</span></span>`;
+  }
+  return `<span class="team-mini-icon team-mini-ball">${soccerBallSvg()}</span>`;
+}
+
 function setTeamPreview(inputId, previewId) {
   const value = document.getElementById(inputId).value.trim();
   const preview = document.getElementById(previewId);
@@ -1438,7 +1482,17 @@ function renderStandings() {
   document.getElementById('standingsBody').innerHTML = rows.map((r, i) => `
     <tr>
       <td class="rank-cell ${rc(i)}">${rl(i)}</td>
-      <td>${esc(r.name)}</td>
+      <td>
+        <div class="standings-player">
+          <span class="standings-team-icons">${(() => {
+            const p = state.players.find(x => x.id === r.id);
+            const t1 = normalizeTeam(p && p.teams ? p.teams[0] : '');
+            const t2 = normalizeTeam(p && p.teams ? p.teams[1] : '');
+            return miniTeamIconHtml(t1) + miniTeamIconHtml(t2);
+          })()}</span>
+          <span>${esc(r.name)}</span>
+        </div>
+      </td>
       <td>${r.pj}</td>
       <td style="color:var(--win)">${r.g}</td>
       <td style="color:var(--draw)">${r.e}</td>
