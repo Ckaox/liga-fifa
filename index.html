@@ -631,13 +631,42 @@ const teamAliases = {
   inter: 'Inter',
   acmilan: 'Milan',
   atletico: 'Atletico Madrid',
-  atleticoMadrid: 'Atletico Madrid'
+  atleticomadrid: 'Atletico Madrid',
+  lanus: 'Lanus',
+  boca: 'Boca Juniors',
+  river: 'River Plate',
+  independiente: 'Independiente',
+  racing: 'Racing Club',
+  sanlorenzo: 'San Lorenzo',
+  velez: 'Velez Sarsfield',
+  estudiantes: 'Estudiantes',
+  newells: "Newell's Old Boys",
+  rosariocentral: 'Rosario Central',
+  gimnasia: 'Gimnasia y Esgrima',
+  argentinos: 'Argentinos Juniors',
+  talleres: 'Talleres',
+  belgrano: 'Belgrano'
+};
+const teamApiHints = {
+  lanus: 'Club Atletico Lanus',
+  bocajuniors: 'Boca Juniors',
+  riverplate: 'River Plate',
+  racingclub: 'Racing Club',
+  sanlorenzo: 'San Lorenzo',
+  velezsarsfield: 'Velez Sarsfield',
+  estudiantes: 'Estudiantes de La Plata',
+  newellsoldboys: "Newell's Old Boys",
+  rosariocentral: 'Rosario Central',
+  gimnasiayesgrima: 'Gimnasia y Esgrima',
+  argentinosjuniors: 'Argentinos Juniors'
 };
 const fallbackTeams = [
   { name: 'Real Madrid', logo: 'https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg' },
   { name: 'FC Barcelona', logo: 'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg' },
   { name: 'Manchester City', logo: 'https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg' },
   { name: 'Liverpool', logo: 'https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg' },
+  { name: 'Manchester United', logo: 'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg' },
+  { name: 'Tottenham', logo: 'https://upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg' },
   { name: 'Bayern Munich', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/1f/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg' },
   { name: 'PSG', logo: 'https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg' },
   { name: 'Inter', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg' },
@@ -646,7 +675,36 @@ const fallbackTeams = [
   { name: 'Juventus', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/15/Juventus_FC_2017_logo.svg' },
   { name: 'Arsenal', logo: 'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg' },
   { name: 'Chelsea', logo: 'https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg' },
-  { name: 'Atletico Madrid', logo: 'https://upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg' }
+  { name: 'Atletico Madrid', logo: 'https://upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg' },
+  { name: 'Sevilla', logo: 'https://upload.wikimedia.org/wikipedia/en/3/3b/Sevilla_FC_logo.svg' },
+  { name: 'Valencia', logo: 'https://upload.wikimedia.org/wikipedia/en/c/ce/Valenciacf.svg' },
+  { name: 'Villarreal', logo: 'https://upload.wikimedia.org/wikipedia/en/7/70/Villarreal_CF_logo.svg' },
+  { name: 'Napoli', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2d/SSC_Neapel.svg' },
+  { name: 'Roma', logo: 'https://upload.wikimedia.org/wikipedia/en/f/f7/AS_Roma_logo_%282017%29.svg' },
+  { name: 'Lazio', logo: 'https://upload.wikimedia.org/wikipedia/en/c/ce/S.S._Lazio_badge.svg' },
+  { name: 'Borussia Dortmund', logo: 'https://upload.wikimedia.org/wikipedia/commons/6/67/Borussia_Dortmund_logo.svg' },
+  { name: 'RB Leipzig', logo: 'https://upload.wikimedia.org/wikipedia/en/0/04/RB_Leipzig_2014_logo.svg' },
+  { name: 'Bayer Leverkusen', logo: 'https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg' },
+  { name: 'Ajax', logo: 'https://upload.wikimedia.org/wikipedia/en/7/79/Ajax_Amsterdam.svg' },
+  { name: 'Benfica', logo: 'https://upload.wikimedia.org/wikipedia/en/a/a2/SL_Benfica_logo.svg' },
+  { name: 'Porto', logo: 'https://upload.wikimedia.org/wikipedia/en/f/f1/FC_Porto.svg' },
+  { name: 'Sporting CP', logo: 'https://upload.wikimedia.org/wikipedia/en/e/e1/Sporting_Clube_de_Portugal_%28Logo%29.svg' },
+  { name: 'Boca Juniors', logo: 'https://upload.wikimedia.org/wikipedia/commons/3/32/Boca_escudo.png' },
+  { name: 'River Plate', logo: 'https://upload.wikimedia.org/wikipedia/commons/3/3f/Logo_River_Plate.svg' },
+  { name: 'Independiente', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2e/Escudo_del_Club_Atl%C3%A9tico_Independiente.svg' },
+  { name: 'Racing Club', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f6/Escudo_de_Racing_Club.svg' },
+  { name: 'San Lorenzo', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7f/Escudo_del_Club_Atl%C3%A9tico_San_Lorenzo_de_Almagro.svg' },
+  { name: 'Velez Sarsfield', logo: 'https://upload.wikimedia.org/wikipedia/commons/3/32/Escudo_del_Club_Atl%C3%A9tico_V%C3%A9lez_Sarsfield.svg' },
+  { name: 'Estudiantes', logo: 'https://upload.wikimedia.org/wikipedia/commons/8/85/Escudo_Estudiantes_de_La_Plata.svg' },
+  { name: "Newell's Old Boys", logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5d/Escudo_del_Club_Atl%C3%A9tico_Newell%27s_Old_Boys.svg' },
+  { name: 'Rosario Central', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Escudo_del_Club_Atl%C3%A9tico_Rosario_Central.svg' },
+  { name: 'Huracan', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b8/Escudo_del_Club_Atl%C3%A9tico_Hurac%C3%A1n.svg' },
+  { name: 'Lanus', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/47/Escudo_del_Club_Atl%C3%A9tico_Lan%C3%BAs.svg' },
+  { name: 'Banfield', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/44/Escudo_del_Club_Atl%C3%A9tico_Banfield.svg' },
+  { name: 'Argentinos Juniors', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Escudo_Club_Atl%C3%A9tico_Argentinos_Juniors.svg' },
+  { name: 'Gimnasia y Esgrima', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b8/Escudo_del_Club_de_Gimnasia_y_Esgrima_La_Plata.svg' },
+  { name: 'Talleres', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Escudo_de_Talleres_%28CBA%29.svg' },
+  { name: 'Belgrano', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b5/Escudo_del_Club_Atl%C3%A9tico_Belgrano.svg' }
 ];
 let state = { players: [], matches: [] };
 try { const s = localStorage.getItem('fifaLeague3'); if (s) state = JSON.parse(s); } catch(e) {}
@@ -860,23 +918,43 @@ async function searchTeamInSportsDb(name) {
   const key = keyify(cleanName);
   if (teamSearchCache[key]) return teamSearchCache[key];
 
-  try {
-    const url = `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(cleanName)}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const teams = Array.isArray(data.teams) ? data.teams : [];
-    if (!teams.length) return null;
-    const exact = teams.find(t => keyify(t.strTeam) === key) || teams[0];
-    const resolved = {
-      name: exact.strTeam || cleanName,
-      logo: exact.strTeamBadge || exact.strBadge || ''
-    };
-    teamSearchCache[key] = resolved;
-    return resolved;
-  } catch (e) {
-    return null;
+  const candidates = [cleanName];
+  const aliasName = teamAliases[key];
+  if (aliasName) candidates.push(aliasName);
+  const hintName = teamApiHints[key];
+  if (hintName) candidates.push(hintName);
+
+  const plain = cleanName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\b(fc|cf|club|atletico|de|la|el)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (plain && plain.toLowerCase() !== cleanName.toLowerCase()) candidates.push(plain);
+
+  const uniqueCandidates = [...new Set(candidates.filter(Boolean))];
+
+  for (const candidate of uniqueCandidates) {
+    try {
+      const url = `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(candidate)}`;
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const teams = Array.isArray(data.teams) ? data.teams : [];
+      if (!teams.length) continue;
+      const exact = teams.find(t => keyify(t.strTeam) === key)
+        || teams.find(t => keyify(t.strTeam).includes(key))
+        || teams[0];
+      const resolved = {
+        name: exact.strTeam || cleanName,
+        logo: exact.strTeamBadge || exact.strBadge || ''
+      };
+      teamSearchCache[key] = resolved;
+      return resolved;
+    } catch (e) {}
   }
+
+  return null;
 }
 
 async function resolveTeam(name) {
