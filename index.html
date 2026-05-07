@@ -359,6 +359,23 @@
     align-items: center;
     gap: 4px;
   }
+  .team-mini-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    background: rgba(255,255,255,0.06);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex: 0 0 auto;
+  }
+  .team-mini-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
   .team-mini-badge {
     min-width: 20px;
     height: 16px;
@@ -1138,7 +1155,12 @@ function teamCode(teamName) {
 
 function miniTeamIconHtml(team) {
   const t = normalizeTeam(team);
-  return `<span class="team-mini-badge" title="${esc(t.name || '')}">${teamCode(t.name)}</span>`;
+  const name = t.name || 'Equipo';
+  const code = teamCode(name);
+  if (t.logo) {
+    return `<span class="team-mini-icon" title="${esc(name)}"><img src="${esc(t.logo)}" alt="" onerror="this.style.display='none'; if(this.nextElementSibling){ this.nextElementSibling.style.display='inline-flex'; }"><span class="team-mini-badge" style="display:none" title="${esc(name)}">${code}</span></span>`;
+  }
+  return `<span class="team-mini-badge" title="${esc(name)}">${code}</span>`;
 }
 
 function setTeamPreview(inputId, previewId) {
