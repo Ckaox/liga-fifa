@@ -359,27 +359,21 @@
     align-items: center;
     gap: 4px;
   }
-  .team-mini-icon {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--border2);
+  .team-mini-badge {
+    min-width: 20px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 10px;
+    background: rgba(245,197,24,0.14);
+    border: 1px solid rgba(245,197,24,0.45);
+    color: var(--gold);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
     flex: 0 0 auto;
-  }
-  .team-mini-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-  .team-mini-ball svg {
-    width: 10px;
-    height: 10px;
-    stroke: var(--gold);
   }
   .pts-cell { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--gold) !important; }
   .rank-cell { color: var(--text3) !important; font-weight: 600; width: 32px; }
@@ -1126,16 +1120,23 @@ function teamHtml(team) {
   return `${logo}${esc(team.name)}`;
 }
 
-function soccerBallSvg() {
-  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3c3 3 3 9 0 12M12 3C9 6 9 12 12 15M3 12h18"/></svg>';
+function teamCode(teamName) {
+  const words = String(teamName || '')
+    .trim()
+    .split(/\s+/)
+    .filter(w => w && !['y', 'de', 'del', 'la', 'el', 'fc', 'cf', 'club'].includes(w.toLowerCase()));
+  if (!words.length) return 'CLB';
+  const first = words[0]
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toUpperCase();
+  return (first.slice(0, 3) || 'CLB');
 }
 
 function miniTeamIconHtml(team) {
   const t = normalizeTeam(team);
-  if (t.logo) {
-    return `<span class="team-mini-icon"><img src="${esc(t.logo)}" alt="" onerror="this.style.display='none'; if(this.nextElementSibling){ this.nextElementSibling.style.display='inline-flex'; }"><span class="team-mini-icon team-mini-ball" style="display:none">${soccerBallSvg()}</span></span>`;
-  }
-  return `<span class="team-mini-icon team-mini-ball">${soccerBallSvg()}</span>`;
+  return `<span class="team-mini-badge" title="${esc(t.name || '')}">${teamCode(t.name)}</span>`;
 }
 
 function setTeamPreview(inputId, previewId) {
