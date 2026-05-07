@@ -644,7 +644,8 @@ const teamAliases = {
   gimnasia: 'Gimnasia y Esgrima',
   argentinos: 'Argentinos Juniors',
   talleres: 'Talleres',
-  belgrano: 'Belgrano'
+  belgrano: 'Belgrano',
+  defensayjusticia: 'Defensa y Justicia'
 };
 const teamApiHints = {
   lanus: 'Club Atletico Lanus',
@@ -657,7 +658,8 @@ const teamApiHints = {
   newellsoldboys: "Newell's Old Boys",
   rosariocentral: 'Rosario Central',
   gimnasiayesgrima: 'Gimnasia y Esgrima',
-  argentinosjuniors: 'Argentinos Juniors'
+  argentinosjuniors: 'Argentinos Juniors',
+  defensayjusticia: 'Defensa y Justicia'
 };
 const TEAM_CATALOG_CACHE_KEY = 'fifaTeamsCatalogV3';
 const TEAM_CATALOG_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -727,7 +729,8 @@ const fallbackTeams = [
   { name: 'Argentinos Juniors', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Escudo_Club_Atl%C3%A9tico_Argentinos_Juniors.svg' },
   { name: 'Gimnasia y Esgrima', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b8/Escudo_del_Club_de_Gimnasia_y_Esgrima_La_Plata.svg' },
   { name: 'Talleres', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Escudo_de_Talleres_%28CBA%29.svg' },
-  { name: 'Belgrano', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b5/Escudo_del_Club_Atl%C3%A9tico_Belgrano.svg' }
+  { name: 'Belgrano', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b5/Escudo_del_Club_Atl%C3%A9tico_Belgrano.svg' },
+  { name: 'Defensa y Justicia', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7a/Escudo_del_Club_Social_y_Deportivo_Defensa_y_Justicia.svg' }
 ];
 let state = { players: [], matches: [] };
 try { const s = localStorage.getItem('fifaLeague3'); if (s) state = JSON.parse(s); } catch(e) {}
@@ -1040,9 +1043,23 @@ async function searchTeamInSportsDb(name) {
       const data = await res.json();
       const teams = Array.isArray(data.teams) ? data.teams : [];
       if (!teams.length) continue;
-      const exact = teams.find(t => keyify(t.strTeam) === key)
-        || teams.find(t => keyify(t.strTeam).includes(key))
-        || teams[0];
+      const scored = teams
+        .map(t => {
+          const teamKey = keyify(t.strTeam);
+          if (!teamKey) return null;
+          let score = 0;
+          if (teamKey === key) score += 100;
+          if (teamKey.includes(key) || key.includes(teamKey)) score += 40;
+          const tokens = key.match(/[a-z0-9]{3,}/g) || [];
+          tokens.forEach(tok => { if (teamKey.includes(tok)) score += 10; });
+          return { team: t, score };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score);
+
+      if (!scored.length || scored[0].score < 35) continue;
+
+      const exact = scored[0].team;
       const resolved = {
         name: exact.strTeam || cleanName,
         logo: exact.strTeamBadge || exact.strBadge || ''
@@ -1095,8 +1112,12 @@ async function enrichTeamPreview(inputId, previewId) {
   if (!value) return;
   const team = await resolveTeam(value);
   const input = document.getElementById(inputId);
-  if (input && input.value.trim()) {
-    input.value = team.name || input.value;
+  if (!input) return;
+  // Preserve exactly what the user typed; only enrich logo preview.
+  if (team && team.logo) {
+    const preview = document.getElementById(previewId);
+    if (preview) preview.innerHTML = teamHtml({ name: input.value.trim(), logo: team.logo });
+    return;
   }
   setTeamPreview(inputId, previewId);
 }
